@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Monitoramento de Energia</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background-color: #e0f2f7;
+      color: #000;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    h1, h2, h3 {
+      color: #00838f;
+    }
+    #visao-geral {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      flex: 1;
+      text-align: center;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .status-ligado {
+      color: green;
+      font-weight: bold;
+    }
+    .status-desligado {
+      color: red;
+      font-weight: bold;
+    }
+    #graficos {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .grafico-container {
+      width: 80%;
+      margin: 20px auto;
+    }
+    /* Estilo do botão de modo escuro */
+    .modo-escuro body {
+      background-color: #121212;
+      color: #ffffff;
+    }
+    .modo-escuro .card {
+      background-color: #1e1e1e;
+      color: #fff;
+    }
+    #botao-tema {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      background-color: #00838f;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 10;
+    }
+    #botao-tema:hover {
+      background-color: #005f66;
+    }
+  </style>
+</head>
+<body>
+  <button id="botao-tema">🌙 Modo Noturno</button>
+  <h1>Monitoramento de Energia</h1>
+
+  <h2>Visão Geral</h2>
+  <div id="visao-geral">
+    <div class="card">
+      <h3>Ar-Condicionado</h3>
+      <p>Consumo Atual: <span id="consumo-atual-ar">---</span> W</p>
+      <p>Status: <span id="status-ar">---</span></p>
+    </div>
+    <div class="card">
+      <h3>Geladeira</h3>
+      <p>Consumo Atual: <span id="consumo-atual-geladeira">---</span> W</p>
+      <p>Status: <span id="status-geladeira">---</span></p>
+    </div>
+  </div>
+
+  <h2>Gráfico de Linha do Consumo</h2>
+  <div id="graficos">
+    <h3>Ar-Condicionado</h3>
+    <div class="grafico-container">
+      <canvas id="chart-ar"></canvas>
+    </div>
+    <h3>Geladeira</h3>
+    <div class="grafico-container">
+      <canvas id="chart-geladeira"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // Alternância do tema claro/escuro
+    const botaoTema = document.getElementById("botao-tema");
+    botaoTema.addEventListener("click", () => {
+      document.documentElement.classList.toggle("modo-escuro");
+      botaoTema.textContent = document.documentElement.classList.contains("modo-escuro") 
+        ? "☀️ Modo Claro" 
+        : "🌙 Modo Noturno";
+    });
+
+    // Dados simulados do consumo (amostra de 144 valores para 24h, cada índice = 10 min)
+    const dataAr = [100,100,100,100,100,100,100,100,100,100,100,100,100,100,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,250,250,250,250,250,250,250,250,250,250,250,250,250];
+
+    const dataGeladeira = [0,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,
+          300,300,300,300,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,
+          1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,
+          300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,
+          300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,
+          300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,
+          300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,
+          300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,
+          300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,
+          300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,
+          300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,
+          300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300];
+
+    // Estado inicial do índice (último ponto)
+    let indexAtual = 0;
+
+    // Função para formatar tempo no formato hh:mm
+    const formatarHora = (index) => {
+      const hora = Math.floor(index / 6);
+      const minuto = (index % 6) * 10;
+      return `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`;
+    };
+
+    // Função para atualizar o gráfico e o consumo
+    const atualizarGrafico = () => {
+      const consumoAtualAr = dataAr[indexAtual];
+      const consumoAtualGeladeira = dataGeladeira[indexAtual];
+
+      document.getElementById("consumo-atual-ar").innerText = consumoAtualAr;
+      document.getElementById("consumo-atual-geladeira").innerText = consumoAtualGeladeira;
+      document.getElementById("status-ar").innerText = consumoAtualAr > 0 ? "Ligado" : "Desligado";
+      document.getElementById("status-ar").classList.toggle("status-ligado", consumoAtualAr > 0);
+      document.getElementById("status-ar").classList.toggle("status-desligado", consumoAtualAr === 0);
+
+      document.getElementById("status-geladeira").innerText = consumoAtualGeladeira > 0 ? "Ligado" : "Desligado";
+      document.getElementById("status-geladeira").classList.toggle("status-ligado", consumoAtualGeladeira > 0);
+      document.getElementById("status-geladeira").classList.toggle("status-desligado", consumoAtualGeladeira === 0);
+
+      // Atualizar os gráficos
+      chartAr.data.labels.push(formatarHora(indexAtual));
+      chartAr.data.datasets[0].data.push(consumoAtualAr);
+      chartAr.update();
+
+      chartGeladeira.data.labels.push(formatarHora(indexAtual));
+      chartGeladeira.data.datasets[0].data.push(consumoAtualGeladeira);
+      chartGeladeira.update();
+    };
+
+    // Configuração do gráfico do Ar-Condicionado
+    const ctxAr = document.getElementById("chart-ar").getContext("2d");
+    const chartAr = new Chart(ctxAr, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Consumo (W) do Ar-Condicionado",
+            data: [],
+            borderColor: "rgba(0, 188, 212, 1)",
+            backgroundColor: "rgba(0, 188, 212, 0.2)",
+            fill: true,
+            tension: 0.4
+          }
+        ]
+      }
+    });
+
+    // Configuração do gráfico da Geladeira
+    const ctxGeladeira = document.getElementById("chart-geladeira").getContext("2d");
+    const chartGeladeira = new Chart(ctxGeladeira, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Consumo (W) da Geladeira",
+            data: [],
+            borderColor: "rgba(0, 255, 0, 1)",
+            backgroundColor: "rgba(0, 255, 0, 0.2)",
+            fill: true,
+            tension: 0.4
+          }
+        ]
+      }
+    });
+
+    // Atualizar gráficos a cada 10 segundos (simulando o consumo)
+    setInterval(() => {
+      if (indexAtual < dataAr.length) {
+        atualizarGrafico();
+        indexAtual++;
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
